@@ -48,7 +48,39 @@ return false
 
 지금부터 axis-aligned bounding rectangular parallelepiped(정확한 명칭은 이것입니다)를 axis-aligned bounding boxes 또는 AABB라고 부를 것입니다. AABB를 광선 교차하는 데 사용하는 모든 방법은 괜찮습니다. 그리고 알아야 하는 것은 교차 여부입니다. 교차점이나 법선 또는 표시하려는 오브젝트에 필요한 어떤 것도 필요하지 않습니다.
 
-대부분의 사람들은 "slab" 방법을 사용합니다.
+대부분의 사람들은 "slab" 방법을 사용합니다. 이것은 n차원 AABB가 흔히 "slab"이라고 불리는 n축 정렬 간격(n axis-aligned intervals)의 교차점이라는 것에 근거합니다. 간격은 두 끝점 사이의 점입니다. 예를 들어, 3 < x < 5, 또는 (3, 5)로 표현합니다. 2D에서 두 간격이 겹치면 2D AABB(직사각형)가 됩니다:
+
+![Figure 2: 2D axis-aligned bounding box](./images/ch3_bounding_volume_hierarchies/fig-2.02-2d-aabb.jpg)
+
+**Figure 2**: 2D axis-aligned bounding box
+
+광선이 한 간격에 충돌하려면 먼저 광선이 경계에 충돌하는지 여부를 알아야 합니다. 다시 2D로 예를 들면 광선 파라미터 $t_0$ 와 $t_1$가 있습니다.(광선이 평면에 평행하면 평면의 교차점은 정의되지 않습니다.)
+
+![Figure 3: Ray-slab intersection](./images/ch3_bounding_volume_hierarchies/fig-2.03-ray-slab.jpg)
+
+**Figure 3**: Ray-slab intersection
+
+3D에서 이 경계는 평면입니다. 평면 방정식은 $x = x_0$ 와 $x = x_1$ 입니다. 광선이 평면에 충돌하는 곳은 어디일까요? 광선은 $t$ 가 주어졌을 때 위치 $P(t)$ 를 반환하는 함수로 구할 수 있다는 것을 기억하세요:
+
+$$P(t)=A+tb$$
+
+이 방정식은 모든 세 x/y/z 좌표에 적용됩니다. 예를 들어, $x(t) = A_x+tb_x$ . 이 광선은 아래 방정식을 만족하는 파라미터 $t$ 에서 평면 $x=x_0$ 에 충돌합니다:
+
+$$x_0=A_x+t_0b_x$$
+
+그러므로 충돌점 $t$ 은:
+
+$$t_0= \frac{x_0-A_x}{b_x}$$
+
+$x_1$ 에 대해서도 비슷한 식을 구할 수 있습니다:
+
+$$t_1= \frac{x_1-A_x}{b_x}$$
+
+이 1차원 수학을 충돌 테스트로 전환하기 위한 핵심은 충돌하려면 $t$ 간격이 겹쳐야 한다는 것입니다. 예를 들어, 2D에서 녹색과 파란색이 겹치는 것은 충돌하는 경우에만 발생합니다:
+
+![Figure 4: Ray-slab t-interval overlap](./images/ch3_bounding_volume_hierarchies/fig-2.04-ray-slab-interval.jpg)
+
+**Figure 4**: Ray-slab t-interval overlap
 
 ### 3.4. Ray Intersection with an AABB
 ### 3.5. An Optimized AABB Hit Method
