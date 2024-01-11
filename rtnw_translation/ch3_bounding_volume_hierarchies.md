@@ -83,6 +83,36 @@ $$t_1= \frac{x_1-A_x}{b_x}$$
 **Figure 4**: Ray-slab t-interval overlap
 
 ### 3.4. Ray Intersection with an AABB
+
+다음 의사 코드는 $t$ 간격이 slab에서 겹치는지 여부를 판단합니다:
+
+```cpp
+compute(tx0, tx1)
+compute(ty0, ty1)
+return overlap?((tx0, tx1), (ty0, ty1))
+```
+
+이건 놀라울 만큼 간단합니다. 또한 3D에서도 동작합니다. 이런 이유 때문에 slab 방식을 주로 사용합니다:
+
+```cpp
+compute(tx0, tx1)
+compute(ty0, ty1)
+compute(tz0, tz1)
+return overlap?((tx0, tx1), (ty0, ty1), (tz0, tz1))
+```
+
+처음보다 덜 아름답게하는 몇 가지 주의 사항이 있습니다. 첫째, 광선은 음의 $x$ 방향으로 진행한다고 가정합니다. 위에서 계산한 간격 $(t_{x0}, t_{x1})$ 은 (7, 3)과 같이 역으로 계산할 수 있습니다. 둘째, 나눗셈을 하면 결과로 무한대가 나올 수 있습니다. 그리고 광선 원점이 slab 경계 중 하나 위에 위치한다고 가정하면, 결과는 `NaN` 이 됩니다. 다양한 레이트레이서의 AABB에서 이런 문제들을 해결하는 방법은 여러 가지가 있습니다. (SIMD와 같은 벡터화 문제는 여기서 다루지 않습니다. 벡터화 속도를 향상시키고 싶다면 Ingo Wald의 논문을 추천합니다.) 우리의 목적에 맞게 적당히 빠르게 만드는 한 큰 병목 현상은 발생할 것 같지 않습니다. 어쨌든 가장 빠른 간단한 방법으로 진행해 보겠습니다! 먼저 간격 계산을 살펴보겠습니다:
+
+$$t_{x0}=\frac{x_0-A_x}{b_x}$$
+$$t_{x1}=\frac{x_1-A_x}{b_x}$$
+
+$b_x = 0$ 를 갖는 완벽하게 유효한 광선은 0 으로 나누는 문제를 발생시킵니다. 이 광선 중 일부는 slab 안에 존재하고 일부는 밖에 존재합니다. 또한, IEEE 부동 소수점을 사용하는 경우에는 0에 ± 기호가 붙습니다. $b_x=0$ 에 대한 좋은 소식은 $t_{x0}$ 과 $t_{x1}$ 이 모두 +∞이거나 $x_0$ 와 $x_1$ 사이가 아니라면 둘 다 -∞가 됩니다. 그러므로 min과 max를 사용하면 올바른 값을 얻을 수 있습니다:
+
+$$t_{x0}=min(\frac{x_0-A_x}{b_x},\frac{x_1-A_x}{b_x})$$
+$$t_{x1}=max(\frac{x_0-A_x}{b_x},\frac{x_1-A_x}{b_x})$$
+
+이렇게 할 경우 남은 문제는 $b_x=0$ 과 $x_0-A_x=0$ 또는 $x_1-A_x=0$ 중 하나에 해당하여 `NaN` 이 되는 경우입니다. 이 경우 충돌 또는 비충돌 중 하나를 선택할 수 있지만 나중에 다시 살펴보겠습니다.
+
 ### 3.5. An Optimized AABB Hit Method
 ### 3.6. Constructing Bounding Boxes for Hittables
 ### 3.7. Creating Bounding Boxes of Lists of Objects
