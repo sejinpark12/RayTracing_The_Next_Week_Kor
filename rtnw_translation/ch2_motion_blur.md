@@ -42,9 +42,19 @@ private:
     ////////////////////////////////////////////////////////////////
 };
 ```
+
 **Listing 1:** [ray.h] Ray with time information
 
-### 2.2. Updating the Camera to Simulate Motion Blur
-### 2.3. Adding Moving Spheres
-### 2.4. Tracking the Time of Ray Intersection
-### 2.5. Putting Everything Together
+### 2.2. Managing Time
+
+시작하기 전에, 하나 이상의 연속적인 렌더링에서 시간을 관리하는 방법에 대해 생각해 보겠습니다. 셔터 타이밍에는 두 가지 측면을 고려해야 합니다: 한 셔터가 열릴 때부터 다음 셔터가 열릴 때까지의 시간, 각 프레임 동안 셔터가 열려있는 시간. 표준 영화 필름은 보통 초당 24프레임으로 촬영되었습니다. 최신 디지털 영화는 24, 30, 48, 60, 120 또는 감독이 원하는 초당 프레임으로 촬영할 수 있습니다.
+
+각 프레임은 고유한 셔터 스피드를 가질 수 있습니다. 이 셔터 스피드는 전체 프레임의 최대 지속 시간일 필요는 없습니다(일반적으로 그렇지 않습니다). 매 프레임마다 1/1000초 동안 또는 1/60초 동안 셔터를 열 수 있습니다.
+
+### 2.3. Updating the Camera to Simulate Motion Blur
+
+### 2.4. Adding Moving Spheres
+
+### 2.5. Tracking the Time of Ray Intersection
+
+### 2.6. Putting Everything Together
