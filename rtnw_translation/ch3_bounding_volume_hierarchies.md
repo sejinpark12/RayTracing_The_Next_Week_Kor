@@ -113,14 +113,113 @@ $$t_{x1}=max(\frac{x_0-A_x}{b_x},\frac{x_1-A_x}{b_x})$$
 
 이렇게 할 경우 남은 문제는 $b_x=0$ 과 $x_0-A_x=0$ 또는 $x_1-A_x=0$ 중 하나에 해당하여 `NaN` 이 되는 경우입니다. 이 경우 충돌 또는 비충돌 중 하나를 선택할 수 있지만 나중에 다시 살펴보겠습니다.
 
+이제 수도 함수 `overlaps` 를 살펴보겠습니다. 간격이 반대가 아니라고 가정할 수 있다면, 간격이 겹칠 때 true가 리턴됩니다. 불리언 함수 `overlaps()` 는 `t_interval1` 와 `t_interval2` 간격의 겹침을 계산하고, 그 겹침이 비어 있지 않은지를 판단합니다:
+
+```cpp
+bool overlaps(t_interval1, t_interval2)
+    t_min <- max(t_interval1.min, t_interval2.min)
+    t_max <- min(t_interval1.max, t_interval2.max)
+    return t_min < t_max
+```
+
+만약 `NaN` 값들이 존재한다면, 비교 결과가 false를 리턴할 것이므로 바운딩 박스에 접하는 경우가 있다면 약간의 패딩을 추가해야 합니다(그리고 레이 트레이싱에서는 결국 모든 경우가 발생하기 때문에 이러한 경우를 고려해야 합니다).
+
+이를 위해, 먼저 주어진 양만큼 간격을 늘려주는 새로운 `interval` 함수인 `expand` 를 추가하겠습니다.
+
+```cpp
+class interval {
+public:
+    ...
+    double clamp(double x) const {
+        if (x < min) return min;
+        if (x > max) return max;
+        return x;
+    }
+
+    interval expand(double delta) const {
+        auto padding = delta / 2;
+        return interval(min - padding, max + padding);
+    }
+
+    static const interval empty, universe;
+};
+```
+
+**Listing 7**: [interval.h] interval::expand() method
+
+이제 새로운 AABB 클래스 구현에 필요한 모든 것을 갖추었습니다.
+
+```cpp
+#ifndef AABB_H
+#define AABB_H
+
+class aabb {
+public:
+    interval x, y, z;
+
+    aabb() {} // 디폴트 AABB는 비어있습니다. 기본적으로 간격이 비어 있기 때문입니다.
+
+    aabb(const interval& x, const interval& y, const interval& z)
+        : x(x), y(y), z(z) {}
+
+    // 두 점 a와 b를 바운딩 박스의 극값으로 처리하여 특정 최대/최소 좌표 순서가 필요없습니다.
+    aabb(const point3& a, const point3& b) {
+        x = (a[0] <=  b[0]) ? interval(a[0], b[0]) : interval(b[0], a[0]);
+        y = (a[1] <=  b[1]) ? interval(a[1], b[1]) : interval(b[1], a[1]);
+        z = (a[2] <=  b[2]) ? interval(a[2], b[2]) : interval(b[2], a[2]);
+    }
+
+    const interval& axis_interval(int n) const {
+        if (n == 1) return y;
+        if (n == 2) return z;
+        return x;
+    }
+
+    bool hit(const ray& r, interval ray_t) const {
+        const point3& ray_orig = r.origin();
+        const vec3&   ray_dir  = r.direction();
+
+        for (int axis = 0; axis < 3; axis++) {
+            const interval& ax = axis_interval(axis);
+            const double adinv = 1.0 / ray_dir[axis];
+
+            auto t0 = (ax.min - ray_orig[axis]) * adinv;
+            auto t1 = (ax.max - ray_orig[axis]) * adinv;
+
+            if (t0 < t1) {
+                if (t0 > ray_t.min) ray_t.min = t0;
+                if (t1 < ray_t.max) ray_t.max = t1;
+            } else {
+                if (t1 > ray_t.min) ray_t.min = t1;
+                if (t0 < ray_t.max) ray_t.max = t0;
+            }
+
+            if (ray_t.max <= ray_t.min)
+                return false;
+        }
+        return true;
+    }
+};
+
+#endif
+```
+
+**Listing 8**: [aabb.h] Axis-aligned bounding box class
+
 ### 3.5. An Optimized AABB Hit Method
+
 ### 3.6. Constructing Bounding Boxes for Hittables
+
 ### 3.7. Creating Bounding Boxes of Lists of Objects
+
 ### 3.8. The BVH Node Class
+
 ### 3.9. Splitting BVH Volumes
+
 ### 3.10. The Box Comparision Functions
 
 ---
 
 ## 출처
+
 [Ray Tracing: The Next Week - 3 Bounding Volume Hierarchies](https://raytracing.github.io/books/RayTracingTheNextWeek.html#boundingvolumehierarchies)
