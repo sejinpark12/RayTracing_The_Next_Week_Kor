@@ -3,15 +3,15 @@
 
 <p align="center"><img src="https://raytracing.github.io/images/cover/CoverRTW2-small.jpg"></p>
 
-- 1. Overview
-- 2. Motion Blur
+- ✅ **[1. Overview](./rtnw_translation/ch1_overview.md)**
+- **2. Motion Blur**
   - 2.1 Introduction of SpaceTime Ray Tracing
   - 2.2 Managing Time
   - 2.3 Updating the Camera to Simulate Motion Blur
   - 2.4 Adding Moving Spheres
   - 2.5 Tracking the Time of Ray Intersection
   - 2.6 Putting Everything Together
-- 3. Bounding Volume Hierarchies
+- **3. Bounding Volume Hierarchies**
   - 3.1 The Key Idea
   - 3.2 Hierarchies of Bounding Volumes
   - 3.3 Axis-Aligned Bounding Boxes(AABBs)
@@ -22,14 +22,14 @@
   - 3.8 Splitting BVH Volumes
   - 3.9 The Box Comparison Functions
   - 3.10 Another BVH Optimization
-- 4. Texture Mapping
+- **4. Texture Mapping**
   - 4.1 Constant Color Texture
   - 4.2 Solid Textures: A Checker Texture
   - 4.3 Rendering The Solid Checker Texture
   - 4.4 Texture Coordinates for Spheres
   - 4.5 Accessing Texture Image Data
   - 4.6 Rendering The Image Texture
-- 5. Perlin Noise
+- **5. Perlin Noise**
   - 5.1 Using Blocks of Random Numbers
   - 5.2 Smoothing out the Result
   - 5.3 Improvement with Hermitian Smoothing
@@ -37,7 +37,7 @@
   - 5.5 Using Random Vectors on the Lattice Points
   - 5.6 Introducing Turbulence
   - 5.7 Adjusting the Phase
-- 6. Quadrilaterals
+- **6. Quadrilaterals**
   - 6.1 Defining the Quadrilateral
   - 6.2 Ray-Plane Intersection
   - 6.3 Finding the Plane That Contains a Given Quadrilateral
@@ -45,15 +45,15 @@
   - 6.5 Deriving the Planar Coordinates
   - 6.6 Interior Testing of The Intersection Using UV Coordinates
   - 6.7 Additional 2D Primitives
-- 7. Lights
+- **7. Lights**
   - 7.1 Emissive Materials
   - 7.2 Adding Background Color to the Ray Color Function
   - 7.3 Turning Objects into Lights
   - 7.4 Creating an Empty "Cornell Box"
-- 8. Instances
+- **8. Instances**
   - 8.1 Instance Translation
   - 8.2 Instance Rotation
-- 9. Volumes
+- **9. Volumes**
   - 9.1 Constant Density Mediums
   - 9.2 Rendering a Cornell Box with Smoke and Fog Boxes
-- 10. A Scene Testing All New Features
+- **10. A Scene Testing All New Features**
