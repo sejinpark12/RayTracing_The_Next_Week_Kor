@@ -1,5 +1,5 @@
 # Ray Tracing The Next Week 번역
-*Version 4.0.2, 2025-04-25*
+**원문:** [Ray Tracing The Next Week](https://raytracing.github.io/books/RayTracingTheNextWeek.html) *Version 4.0.2, 2025-04-25*
 
 <p align="center"><img src="https://raytracing.github.io/images/cover/CoverRTW2-small.jpg"></p>
 
