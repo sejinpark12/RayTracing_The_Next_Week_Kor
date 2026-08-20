@@ -12,9 +12,9 @@
   - 2.5 Tracking the Time of Ray Intersection
   - 2.6 Putting Everything Together
 - **3 Bounding Volume Hierarchies**
-  - 3.1 The Key Idea
-  - 3.2 Hierarchies of Bounding Volumes
-  - 3.3 Axis-Aligned Bounding Boxes (AABBs)
+  - [3.1 The Key Idea](./rtnw_translation/ch3_bounding_volume_hierarchies.md#31-the-key-idea)
+  - [3.2 Hierarchies of Bounding Volumes](./rtnw_translation/ch3_bounding_volume_hierarchies.md#32-hierarchies-of-bounding-volumes)
+  - [3.3 Axis-Aligned Bounding Boxes (AABBs)](./rtnw_translation/ch3_bounding_volume_hierarchies.md#33-axis-aligned-bounding-boxes-aabbs)
   - 3.4 Ray Intersection with an AABB
   - 3.5 Constructing Bounding Boxes for Hittables
   - 3.6 Creating Bounding Boxes of Lists of Objects
