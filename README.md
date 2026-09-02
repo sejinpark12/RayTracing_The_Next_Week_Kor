@@ -11,15 +11,15 @@
   - 2.4 Adding Moving Spheres
   - 2.5 Tracking the Time of Ray Intersection
   - 2.6 Putting Everything Together
-- **3 Bounding Volume Hierarchies**
+- 🚧 **[3 Bounding Volume Hierarchies](./rtnw_translation/ch3_bounding_volume_hierarchies.md)**
   - [3.1 The Key Idea](./rtnw_translation/ch3_bounding_volume_hierarchies.md#31-the-key-idea)
   - [3.2 Hierarchies of Bounding Volumes](./rtnw_translation/ch3_bounding_volume_hierarchies.md#32-hierarchies-of-bounding-volumes)
   - [3.3 Axis-Aligned Bounding Boxes (AABBs)](./rtnw_translation/ch3_bounding_volume_hierarchies.md#33-axis-aligned-bounding-boxes-aabbs)
   - [3.4 Ray Intersection with an AABB](./rtnw_translation/ch3_bounding_volume_hierarchies.md#34-ray-intersection-with-an-aabb)
-  - 3.5 Constructing Bounding Boxes for Hittables
-  - 3.6 Creating Bounding Boxes of Lists of Objects
-  - 3.7 The BVH Node Class
-  - 3.8 Splitting BVH Volumes
+  - [3.5 Constructing Bounding Boxes for Hittables](./rtnw_translation/ch3_bounding_volume_hierarchies.md#35-constructing-bounding-boxes-for-hittables)
+  - [3.6 Creating Bounding Boxes of Lists of Objects](./rtnw_translation/ch3_bounding_volume_hierarchies.md#36-creating-bounding-boxes-of-lists-of-objects)
+  - [3.7 The BVH Node Class](./rtnw_translation/ch3_bounding_volume_hierarchies.md#37-the-bvh-node-class)
+  - [3.8 Splitting BVH Volumes](./rtnw_translation/ch3_bounding_volume_hierarchies.md#38-splitting-bvh-volumes)
   - 3.9 The Box Comparison Functions
   - 3.10 Another BVH Optimization
 - **4 Texture Mapping**

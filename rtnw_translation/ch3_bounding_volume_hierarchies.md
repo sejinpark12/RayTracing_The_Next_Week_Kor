@@ -126,8 +126,6 @@ bool overlaps(t_interval1, t_interval2)
 
 그러기 위해서 `interval` 클래스에 새로운 맴버 함수 `expand` 를 추가하겠습니다. `expand` 함수는 구간에 주어진 크기만큼 패딩을 적용합니다.
 
-To accomplish this, we'll first add a new `interval` function `expand`, which pads an interval by a given amount:
-
 ```cpp
 class interval {
   public:
@@ -213,18 +211,313 @@ class aabb {
 **<p align="center">Listing 8:** [<span>aabb</span>.h] _Axis-aligned bounding box class</p>_
 
 ### 3.5 Constructing Bounding Boxes for Hittables
+이제 모든 교차 가능한 오브젝트들의 바운딩 박스를 계산하는 함수를 추가하겠습니다. 그다음 모든 프리미티브에 대한 바운딩 박스 계층 구조를 만들고, 계층 구조의 리프 노드에 구와 같은 각 프리미티브들을 위치시킵니다.
+
+매개변수를 지정하지 않은 `interval` 값은 빈 값으로 생성된다는 것을 기억하세요. 3차원에서 `aabb` 오브젝트는 x, y, z 각 차원마다 구간을 가지므로, 각 구간은 빈 값이 되고, `aabb` 오브젝트도 비어 있게 됩니다. 그러므로 어떤 오브젝트들은 빈 바운딩 볼륨을 가질 수 있습니다. 자식 노드가 없는 `hittable_list` 오브젝트가 그런 예입니다. 다행히도, 이 책에서 interval 클래스를 설계한 방식대로라면 빈 바운딩 볼륨이 있더라도 수학적으로 잘 동작합니다.
+
+마지막으로, 어떤 오브젝트들은 시간에 따라 움직일 수 있다는 것을 기억하세요. 이런 오브젝트들은 time=0부터 time=1까지의 움직임 전체 범위에 대한 바운딩 볼륨을 리턴해야 합니다.
+
+```cpp
+///////////////////////// 추가 ////////////////////////////
+#include "aabb.h"                                       //
+//////////////////////////////////////////////////////////
+
+class material;
+
+...
+
+class hittable {
+  public:
+    virtual ~hittable() = default;
+
+    virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
+
+///////////////////////// 추가 ////////////////////////////
+    virtual aabb bounding_box() const = 0;              //
+//////////////////////////////////////////////////////////
+};
+```
+
+**<p align="center">Listing 9:** [<span>hittable</span>.h] _Hittable class with bounding box</p>_
+
+고정된 구에 대한 `bounding_box` 함수는 간단합니다.
+
+```cpp
+class sphere : public hittable {
+  public:
+    // Stationary Sphere
+    sphere(const point3& static_center, double radius, shared_ptr<material> mat)
+///////////////////////// 수정 ////////////////////////////////////////////////////////////
+      : center(static_center, vec3(0, 0, 0)), radius(std::fmax(0, radius)), mat(mat)    //
+    {                                                                                   //
+      auto rvec = vec3(radius, radius, radius);                                         //
+      bbox = aabb(static_center - rvec, static_center + rvec);                          //
+    }                                                                                   //
+//////////////////////////////////////////////////////////////////////////////////////////
+
+    ...
+
+///////////////////////// 추가 //////////////////////////////
+    aabb bounding_box() const override { return bbox; }   //
+////////////////////////////////////////////////////////////
+
+  private:
+    ray center;
+    double radius;
+    shared_ptr<material> mat;
+///////////////////////// 추가 //////////////////////////////
+    aabb bbox;                                            //
+////////////////////////////////////////////////////////////
+
+    ...
+};
+```
+
+**<p align="center">Listing 10:** [<span>sphere</span>.h] _Sphere with bounding box</p>_
+
+움직이는 구의 경우, 구가 움직이는 전체 범위에 대한 바운딩 박스를 구해야 합니다. 그러기 위해서는 time=0일 때의 구의 바운딩 박스와 time=1일 때의 구의 바운딩 박스를 구한 다음, 두 바운딩 박스 전체를 감싸는 바운딩 박스를 계산합니다.
+
+```cpp
+class sphere : public hittable {
+  public:
+    ...
+
+    // Moving Sphere
+    sphere(const point3& center1, const point3& center2, double radius, shared_ptr<material> mat)
+///////////////////////// 수정 ////////////////////////////////////////////////////////////
+      : center(center1, center2 - center1), radius(std::fmax(0, radius)), mat(mat)      //
+    {                                                                                   //
+      auto rvec = vec3(radius, radius, radius);                                         //
+      aabb box1(center.at(0) - rvec, center.at(0) + rvec);                              //
+      aabb box2(center.at(1) - rvec, center.at(1) + rvec);                              //
+      bbox = aabb(box1, box2);                                                          //
+    }                                                                                   //
+//////////////////////////////////////////////////////////////////////////////////////////
+
+    ...
+};
+```
+
+**<p align="center">Listing 11:** [<span>sphere</span>.h] _Moving sphere with bounding box</p>_
+
+이제 입력으로 두 바운딩 박스를 받는 새로운 `aabb` 생성자가 필요합니다. 먼저, 이를 위해 새로운 `interval` 생성자를 추가하겠습니다.
+
+```cpp
+class interval {
+  public:
+    double min, max;
+
+    interval() : min(+infinity), max(-infinity) {} // Default interval is empty
+
+    interval(double _min, double _max) : min(_min), max(_max) {}
+
+///////////////////////// 추가 //////////////////////////////////////////////
+    interval(const interval& a, const interval& b) {                      //
+      // Create the interval tightly enclosing the two input intervals.   //
+      min = a.min <= b.min ? a.min : b.min;                               //
+      max = a.max >= b.max ? a.max : b.max;                               //
+    }                                                                     //
+////////////////////////////////////////////////////////////////////////////
+
+    double size() const {
+    ...
+```
+
+**<p align="center">Listing 12:** [<span>interval</span>.h] _Interval constructor from two intervals</p>_
+
+이제 위의 interval 생성자를 사용하여 바운딩 박스 두 개를 입력으로 받아 축정렬 바운딩 박스를 생성할 수 있습니다.
+
+```cpp
+class aabb {
+  public:
+    ...
+
+    aabb(const point3& a, const point3& b) {
+      ...
+    }
+
+///////////////////////// 추가 //////////////////////
+    aabb(const aabb& box0, const aabb& box1) {    //
+      x = interval(box0.x, box1.x);               //
+      y = interval(box0.y, box1.y);               //
+      z = interval(box0.z, box1.z);               //
+    }                                             //
+////////////////////////////////////////////////////
+
+    ...
+};
+```
+
+**<p align="center">Listing 13:** [<span>aabb</span>.h] _AABB constructor from two AABB inputs</p>_
 
 ---
 
 ### 3.6 Creating Bounding Boxes of Lists of Objects
+이제 `hittable_list` object에서 자식들의 바운딩 박스를 계산하도록 수정하겠습니다. 새로운 자식이 추가될 때마다 기존 바운딩 박스에 새로운 자식의 바운딩 박스를 포함하여 점진적으로 업데이트시킵니다.
+
+```cpp
+///////////////////////// 추가 ////////////////////////
+#include "aabb.h"                                   //
+//////////////////////////////////////////////////////
+#include "hittable.h"
+
+#include <vector>
+
+class hittable_list : public hittable {
+  public:
+    std::vector<shared_ptr<hittable>> objects;
+
+    ...
+    void add(shared_ptr<hittable> object) {
+      objects.push_back(object);
+///////////////////////// 추가 ////////////////////////
+      bbox = aabb(bbox, object->bounding_box());    //
+//////////////////////////////////////////////////////
+    }
+
+    bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
+      ...
+    }
+
+///////////////////////// 추가 //////////////////////////////
+    aabb bounding_box() const override { return bbox; }   //
+                                                          //
+  private:                                                //
+    aabb bbox;                                            //
+////////////////////////////////////////////////////////////
+};
+```
+
+**<p align="center">Listing 14:** [<span>hittable_list</span>.h] _Hittable list with bounding box</p>_
 
 ---
 
 ### 3.7 The BVH Node Class
+BVH 역시 `hittable_list` 와 마찬가지로 자기 자신도 하나의 `hittable` 로 동작하도록 구현할 것입니다. 따라서 BVH는 실제로는 오브젝트를 담는 컨테이너이지만, `hit` 함수를 호출하여 "이 광선이 이 BVH가 포함하는 오브젝트들과 교차하는가?"에 대한 답을 리턴할 수 있습니다. 여기서 설계적으로 두 가지 선택을 할 수 있습니다. 첫 번째 선택은 트리 클래스와 트리 내부의 노드 클래스, 이렇게 두 개의 클래스를 만드는 것이고, 두 번째 선택은 노드 클래스 하나만 만들고 루트 포인터로 루트 노드를 참조하는 것입니다. `hit` 함수는 매우 간단합니다. 광선이 해당 노드의 바운딩 박스와 교차하는지 확인한 뒤, 만약 교차한다면 자식 노드들에서 광선과의 교차를 확인하고 세부 사항들을 처리합니다.
+
+가능하다면 저는 하나의 클래스만 사용하는 것을 선호합니다. 코드는 다음과 같습니다.
+
+```cpp
+#ifndef BVH_H
+#define BVH_H
+
+#include "aabb.h"
+#include "hittable.h"
+#include "hittable_list.h"
+
+class bvh_node : public hittable {
+  public:
+    bvh_node(hittable_list list) : bvh_node(list.objects, 0, list.objects.size()) {
+      // There's a C++ subtlety here. This constructor (without span indices) creates an
+      // implicit copy of the hittable list, which we will modify. The lifetime of the copied
+      // list only extends until this constructor exits. That's OK, because we only need to
+      // persist the resulting bounding volume hierarchy.
+    }
+
+    bvh_node(std::vector<shared_ptr<hittable>>& objects, size_t start, size_t end) {
+      // To be implemented later.
+    }
+
+    bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
+      if (!bbox.hit(r, ray_t))
+        return false;
+      bool hit_left = left->hit(r, ray_t, rec);
+      bool hit_right = right->hit(r, interval(ray_t.min, hit_left ? rec.t : ray_t.max), rec);
+
+      return hit_left || hit_right;
+    }
+
+    aabb bounding_box() const override { return bbox; }
+
+  private:
+    shared_ptr<hittable> left;
+    shared_ptr<hittable> right;
+    aabb bbox;
+};
+
+#endif
+```
+
+**<p align="center">Listing 15:** [<span>bvh</span>.h] _Bounding volume hierarchy</p>_
 
 ---
 
 ### 3.8 Splitting BVH Volumes
+BVH를 비롯한 어떤 효율화 구조(efficiency structure)에서든 가장 복잡한 부분은 그 구조를 생성하고 구성하는 부분입니다. 이 작업은 클래스 생성자에서 수행합니다. BVH의 좋은 점은 `bvh_node` 안의 오브젝트 리스트가 두 개의 서브 리스트로 어떻게든 나뉘어져 있기만 한다면 `hit` 함수가 동작 한다는 것입니다. 만약 서브 리스트 분할을 효율적으로 잘 해서 두 자식 노드의 바운딩 박스가 부모 노드의 바운딩 박스보다 작아지도록 하면 BVH는 가장 잘 동작합니다. 잘 동작한다는 말은 정확성이 아닌 속도 측면으로 볼 경우를 의미합니다. 여기서는 최고 성능 분할과 완전 무작위 분할 사이의 절충안을 택해, 각 노드마다 x, y, z축 중 한 축을 기준으로 오브젝트 리스트를 분할하겠습니다. 그러나 단순성에 좀 더 무게를 두겠습니다.
+
+1. x, y, z축 중 하나를 랜덤으로 선택합니다.
+2. `std::sort` 를 사용하여 프리미티브들을 선택한 축 기준으로 정렬합니다.
+3. 정렬된 프리미티브들을 두 서브트리에 절반씩 추가합니다.
+
+파라미터로 들어온 리스트에 원소가 두 개인 경우는 두 원소를 각 서브트리에 하나씩 추가하고 재귀를 종료합니다. 원소가 하나만 있는 경우에는 같은 원소를 두 서브트리에 모두 추가하고 재귀를 종료합니다. 이렇게 하면 두 서브트리는 항상 null이 되지 않으므로 null 포인터 검사를 별도로 할 필요가 없습니다. 원소가 세 개 있는 경우, 명시적으로 한쪽 서브트리에서만 재귀를 수행하도록 처리하면 성능에 약간의 도움이 될 수 있지만, 전체 알고리즘은 뒤에서 최적화할 것이므로 지금은 그렇게 하지 않겠습니다. 다음의 코드는 아직 정의하지 않은 세 가지 함수 `box_x_compare`, `box_y_compare`, `box_z_compare` 를 사용합니다.
+
+```cpp
+#include "aabb.h"
+#include "hittable.h"
+#include "hittable_list.h"
+
+///////////////////////// 추가 //////////////////////
+#include <algorithm>                              //
+////////////////////////////////////////////////////
+
+class bvh_node : public hittable {
+  public:
+    ...
+
+    bvh_node(std::vector<shared_ptr<hittable>>& objects, size_t start, size_t end) {
+///////////////////////// 추가 //////////////////////////////////////////////////////////////
+      int axis = random_int(0, 2);                                                        //
+                                                                                          //
+      auto comparator = (axis == 0) ? box_x_compare                                       //
+                      : (axis == 1) ? box_y_compare                                       //
+                                    : box_z_compare;                                      //
+                                                                                          //
+      size_t object_span = end - start;                                                   //
+                                                                                          //
+      if (object_span == 1) {                                                             //
+        left = right = objects[start];                                                    //
+      } else if (object_span == 2) {                                                      //
+        left = objects[start];                                                            //
+        right = objects[start + 1];                                                       //
+      } else {                                                                            //
+        std::sort(std::begin(objects) + start, std::begin(objects) + end, comparator);    //
+                                                                                          //
+        auto mid = start + object_span / 2;                                               //
+        left = make_shared<bvh_node>(objects, start, mid);                                //
+        right = make_shared<bvh_node>(objects, mid, end);                                 //
+      }                                                                                   //
+                                                                                          //
+      bbox = aabb(left->bounding_box(), right->bounding_box());                           //
+////////////////////////////////////////////////////////////////////////////////////////////
+    }
+
+    ...
+};
+```
+**<p align="center">Listing 16:** [<span>bvh</span>.h] _Bounding volume hierarchy node</p>_
+
+새로운 `random_int()` 함수를 사용합니다.
+
+```cpp
+...
+
+inline double random_double(double min, double max) {
+  // Returns a random real in [min, max).
+  return min + (max - min) * random_double();
+}
+
+///////////////////////// 추가 //////////////////////
+inline int random_int(int min, int max) {         //
+  // Returns a random integer in [min, max].      //
+  return int(random_double(min, max + 1));        //
+////////////////////////////////////////////////////
+}
+
+...
+```
+**<p align="center">Listing 17:** [<span>rtweekend</span>.h] _A function to return random integers in a range</p>_
+
+바운딩 박스가 존재하지 않는 무한 평면과 같은 오브젝트가 주어질 경우에 대비해, 해당 오브젝트에 바운딩 박스가 존재하는지 여부를 확인하는 로직이 필요합니다. 하지만 지금의 레이 트레이서는 이러한 프리미티브가 없으므로, 해당 프리미티브를 추가하기 전까지는 문제가 발생하지 않습니다.
 
 ---
 
