@@ -526,6 +526,86 @@ inline int random_int(int min, int max) {         //
 ---
 
 ### 3.9 The Box Comparision Functions
+지금부터는 `std::sort()` 함수에서 사용할 바운딩 박스 비교 함수를 구현하겠습니다. 그러기 위해서, 세 번째 인자로 축 인덱스를 받고, 그 축을 기준으로 첫 번째 인자가 두 번째 인자보다 작을 경우 `true` 를 리턴하는 제네릭 비교 함수(generic comparator)를 만들겠습니다. 그 다음, 제네릭 비교 함수를 사용하여 축별 비교 함수를 정의합니다.
+
+```cpp
+class bvh_node : public hittable {
+  ...
+
+  private:
+    shared_ptr<hittable> left;
+    shared_ptr<hittable> right;
+    aabb bbox;
+
+///////////////////////// 추가 ////////////////////////////////////////////////
+    static bool box_compare(                                                //          
+      const shared_ptr<hittable> a, const shared_ptr<hittable> b,           //
+      int axis_index                                                        //
+    ) {                                                                     //
+      auto a_axis_interval = a->bounding_box().axis_interval(axis_index);   //
+      auto b_axis_interval = b->bounding_box().axis_interval(axis_index);   //
+      return a_axis_interval.min < b_axis_interval.min;                     //
+    }                                                                       //
+                                                                            //
+    static bool box_x_compare (                                             //
+      const shared_ptr<hittable> a, const shared_ptr<hittable> b            //
+    ) {                                                                     //
+      return box_compare(a, b, 0);                                          //
+    }                                                                       //
+                                                                            //
+    static bool box_y_compare (                                             //
+      const shared_ptr<hittable> a, const shared_ptr<hittable> b            //
+    ) {                                                                     //
+      return box_compare(a, b, 1);                                          //
+    }                                                                       //
+                                                                            //
+    static bool box_z_compare (                                             //
+      const shared_ptr<hittable> a, const shared_ptr<hittable> b            //
+    ) {                                                                     //
+      return box_compare(a, b, 2);                                          //
+    }                                                                       //
+//////////////////////////////////////////////////////////////////////////////
+};
+```
+
+**<p align="center">Listing 18:** [<span>bvh</span>.h] _BVH comparision function, X-axis</p>_
+
+이제 새 BVH 코드를 적용하기 위한 준비가 끝났습니다. 랜덤 구 씬에 적용해 보겠습니다.
+
+```cpp
+#include "rtweekend.h"
+
+///////////////////////// 추가 //////////////////////
+#include "bvh.h"                                  //
+////////////////////////////////////////////////////
+#include "camera.h"
+#include "hittable.h"
+#include "hittable_list.h"
+#include "material.h"
+#include "sphere.h"
+
+int main() {
+  ...
+
+  auto material2 = make_shared<lambertian>(color(0.4, 0.2, 0.1));
+  world.add(make_shared<sphere>(point3(-4, 1, 0), 1.0, material2));
+
+  auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
+  world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
+
+///////////////////////// 추가 //////////////////////////////
+  world = hittable_list(make_shared<bvh_node>(world));    //
+////////////////////////////////////////////////////////////
+
+  camera cam;
+
+  ...
+}
+```
+
+**<p align="center">Listing 19:** [<span>main</span>.cc] _Random spheres, using BVH</p>_
+
+BVH 미적용 버전([image 1](https://raytracing.github.io/books/RayTracingTheNextWeek.html#image-bouncing-spheres))의 렌더링 결과와 동일한 이미지가 렌더링되어야 하지만, 렌더링 시간은 BVH 적용 버전이 더 빠를 것입니다. 시간 측정 결과, BVH 미적용 버전 대비 거의 6.5배가 빨라졌습니다.
 
 ---
 

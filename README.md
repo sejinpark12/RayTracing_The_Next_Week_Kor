@@ -20,7 +20,7 @@
   - [3.6 Creating Bounding Boxes of Lists of Objects](./rtnw_translation/ch3_bounding_volume_hierarchies.md#36-creating-bounding-boxes-of-lists-of-objects)
   - [3.7 The BVH Node Class](./rtnw_translation/ch3_bounding_volume_hierarchies.md#37-the-bvh-node-class)
   - [3.8 Splitting BVH Volumes](./rtnw_translation/ch3_bounding_volume_hierarchies.md#38-splitting-bvh-volumes)
-  - 3.9 The Box Comparison Functions
+  - [3.9 The Box Comparison Functions](./rtnw_translation/ch3_bounding_volume_hierarchies.md#39-the-box-comparision-functions)
   - 3.10 Another BVH Optimization
 - **4 Texture Mapping**
   - 4.1 Constant Color Texture
