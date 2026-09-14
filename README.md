@@ -11,7 +11,7 @@
   - 2.4 Adding Moving Spheres
   - 2.5 Tracking the Time of Ray Intersection
   - 2.6 Putting Everything Together
-- 🚧 **[3 Bounding Volume Hierarchies](./rtnw_translation/ch3_bounding_volume_hierarchies.md)**
+- ✅ **[3 Bounding Volume Hierarchies](./rtnw_translation/ch3_bounding_volume_hierarchies.md)**
   - [3.1 The Key Idea](./rtnw_translation/ch3_bounding_volume_hierarchies.md#31-the-key-idea)
   - [3.2 Hierarchies of Bounding Volumes](./rtnw_translation/ch3_bounding_volume_hierarchies.md#32-hierarchies-of-bounding-volumes)
   - [3.3 Axis-Aligned Bounding Boxes (AABBs)](./rtnw_translation/ch3_bounding_volume_hierarchies.md#33-axis-aligned-bounding-boxes-aabbs)
@@ -22,8 +22,8 @@
   - [3.8 Splitting BVH Volumes](./rtnw_translation/ch3_bounding_volume_hierarchies.md#38-splitting-bvh-volumes)
   - [3.9 The Box Comparison Functions](./rtnw_translation/ch3_bounding_volume_hierarchies.md#39-the-box-comparison-functions)
   - [3.10 Another BVH Optimization](./rtnw_translation/ch3_bounding_volume_hierarchies.md#310-another-bvh-optimization)
-- **4 Texture Mapping**
-  - 4.1 Constant Color Texture
+- 🚧 **[4 Texture Mapping](./rtnw_translation/ch4_texture_mapping.md)**
+  - [4.1 Constant Color Texture](./rtnw_translation/ch4_texture_mapping.md#41-constant-color-texture)
   - 4.2 Solid Textures: A Checker Texture
   - 4.3 Rendering The Solid Checker Texture
   - 4.4 Texture Coordinates for Spheres
