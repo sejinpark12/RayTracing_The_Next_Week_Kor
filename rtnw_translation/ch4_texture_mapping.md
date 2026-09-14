@@ -88,3 +88,5 @@ class hit_record {
 ---
 
 ## 출처
+
+[Ray Tracing: The Next Week - 4 Texture Mapping](https://raytracing.github.io/books/RayTracingTheNextWeek.html#texturemapping)
