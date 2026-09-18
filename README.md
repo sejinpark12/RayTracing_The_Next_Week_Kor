@@ -24,7 +24,7 @@
   - [3.10 Another BVH Optimization](./rtnw_translation/ch3_bounding_volume_hierarchies.md#310-another-bvh-optimization)
 - 🚧 **[4 Texture Mapping](./rtnw_translation/ch4_texture_mapping.md)**
   - [4.1 Constant Color Texture](./rtnw_translation/ch4_texture_mapping.md#41-constant-color-texture)
-  - 4.2 Solid Textures: A Checker Texture
+  - [4.2 Solid Textures: A Checker Texture](./rtnw_translation/ch4_texture_mapping.md#42-solid-textures-a-checker-texture)
   - 4.3 Rendering The Solid Checker Texture
   - 4.4 Texture Coordinates for Spheres
   - 4.5 Accessing Texture Image Data

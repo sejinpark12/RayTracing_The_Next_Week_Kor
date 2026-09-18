@@ -68,6 +68,122 @@ class hit_record {
 ---
 
 ### 4.2 Solid Textures: A Checker Texture
+solid texture(또는 spatial texture)는 3D 공간에서 오로지 각 점의 위치만으로 텍스처 값을 계산합니다. solid texture는 3D 공간 안의 주어진 특정 오브젝트에 색을 칠하는 것이 아니라, 3D 공간 자체의 모든 점에 색을 칠하는 것이라고 생각할 수 있습니다. 이러한 이유로, solid texture가 3D 공간에 정의해 놓은 색상 영역들이 공간에 고정되어 있고, 오브젝트의 위치가 이동한다면 오브젝트 표면의 색이 달라질 수 있습니다. 하지만 일반적으로는 오브젝트의 위치가 이동하면 텍스처도 같이 이동하도록 오브젝트와 solid texture를 서로 고정하고 싶을 것입니다.
+
+spatial texture에 대해 알아보기 위해, 3차원 체크 패턴을 그리는 `checker_texture` 클래스를 구현하겠습니다. spatial texture 함수는 3차원 공간의 지정된 위치을 기준으로 동작하기 때문에, `value()` 함수는 오직 `p` 파라미터만 사용하고 `u`, `v` 파라미터를 사용하지 않습니다.
+
+체크 패턴을 구현하기 위해서는 먼저 입력점의 각 성분에 대해 내림을 계산합니다. 좌표값의 소수 부분을 그냥 제거하는 방법도 있지만, 그렇게 하면 양수/음수값이 0쪽을 향해 모이므로 0을 기준으로 양쪽에서 같은 색이 나오고, 체크 패턴이 자연스럽지 않게 됩니다. `floor` 함수는 항상 값을 음의 무한대 방향으로 이동시켰을 때 처음 만나는 정수로 변환합니다. 세 정수값 $\lfloor x \rfloor, \lfloor y \rfloor, \lfloor z \rfloor$ 을 구한 뒤, 세 값을 모두 더하고 2로 나눈 나머지를 계산합니다. 그 결과값은 0 또는 1이 됩니다. 0은 짝수 색상으로 대응되고, 1은 홀수 색상으로 대응됩니다.
+
+마지막으로, 씬에서 체크 패턴의 크기를 조절하기 위한 scale 파라미터를 추가합니다.
+
+```cpp
+class checker_texture : public texture {
+  public:
+    checker_texture(double scale, shared_ptr<texture> even, shared_ptr<texture> odd)
+      : inv_scale(1.0 / scale), even(even), odd(odd) {}
+
+    checker_texture(double scale, const color& c1, const color& c2)
+      : checker_texture(scale, make_shared<solid_color>(c1), make_shared<solid_color>(c2)) {}
+
+    color value(double u, double v, const point3& p) const override {
+      auto xInteger = int(std::floor(inv_scale * p.x()));
+      auto yInteger = int(std::floor(inv_scale * p.y()));
+      auto zInteger = int(std::floor(inv_scale * p.z()));
+
+      bool isEven = (xInteger + yInteger + zInteger) % 2 == 0;
+
+      return isEven ? even->value(u, v, p) : odd->value(u, v, p);
+    }
+
+  private:
+    double inv_scale;
+    shared_ptr<texture> even;
+    shared_ptr<texture> odd;
+};
+```
+
+**<p align="center">Listing 24:** [texture.h] _Checked texture_
+
+`checker_texture` 의 odd/even 파라미터는 단순한 색상뿐 아니라 다른 procedural texture(`checker_texture` 와 같은 코드나 수학 함수로 계산하여 생성한 텍스처) 객체 자체를 참조할 수 있습니다. 이런 구조는 Pat Hanrahan이 1980년대에 소개한 shader network의 설계 철학과 같습니다.
+
+procedural texture를 적용하기 위해, `lambertian` 클래스에서 색상 대신 텍스처를 사용하도록 수정하겠습니다.
+
+```cpp
+#include "hittable.h"
+///////////////////////// 추가 ////////////////////////////
+#include "texture.h"                                    //
+//////////////////////////////////////////////////////////
+
+...
+
+class lambertian : public material {
+  public:
+///////////////////////// 수정 ////////////////////////////////////////////////////
+    lambertian(const color& albedo) : tex(make_shared<solid_color>(albedo)) {}  //
+//////////////////////////////////////////////////////////////////////////////////
+///////////////////////// 추가 ////////////////////////////////////////////////////
+    lambertian(shared_ptr<texture> tex) : tex(tex) {}                           //
+//////////////////////////////////////////////////////////////////////////////////
+
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override {
+      auto scatter_direction = rec.normal + random_unit_vector();
+
+      // Catch degenerate scatter direction
+      if (scatter_direction.near_zero())
+        scatter_direction = rec.normal;
+
+      scattered = ray(rec.p, scatter_direction, r_in.time());
+///////////////////////// 수정 ////////////////////////////////////////////////////
+      attenuation = tex->value(rec.u, rec.v, rec.p);                            //
+//////////////////////////////////////////////////////////////////////////////////
+      return true;
+    }
+  
+  private:
+///////////////////////// 수정 ////////////////////////////////////////////////////
+    shared_ptr<texture> tex;                                                    //
+///////////////////////// 수정 ////////////////////////////////////////////////////
+};
+```
+
+**<p align="center">Listing 25:** [material.h] _Lambertian material with texture_
+
+위에서 작업한 것들을 main 씬에 적용하면
+
+```cpp
+#include "rtweekend.h"
+
+#include "bvh.h"
+#include "camera.h"
+#include "hittable.h"
+#include "hittable_list.h"
+#include "material.h"
+#include "sphere.h"
+///////////////////////// 추가 //////////////////////////
+#include "texture.h"                                  //
+////////////////////////////////////////////////////////
+
+int main() {
+  hittable_list world;
+
+///////////////////////// 수정 ////////////////////////////////////////////////////////////////////
+  auto checker = make_shared<checker_texture>(0.32, color(.2, .3, .1), color(.9, .9, .9));      //
+  world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, make_shared<lambertian>(checker)));  //
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+  for (int a = -11; a < 11; a++) {
+  ...
+}
+
+```
+
+**<p align="center">Listing 26:** [<span>main</span>.cc] _Checkered texture in use_
+
+다음과 같은 결과를 확인할 수 있습니다.
+
+<p align="center"><img src="https://raytracing.github.io/images/img-2.02-checker-ground.png"></p>
+
+**<p align="center">Image 2:** _Spheres on checkered ground</p>_
 
 ---
 
