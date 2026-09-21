@@ -188,6 +188,110 @@ int main() {
 ---
 
 ### 4.3 Rendering The Solid Checker Texture
+이제 두 번째 씬을 추가하겠습니다. 그리고 앞으로 진행하면서 새로운 씬들을 더 추가할 예정입니다. 실행 시에 원하는 씬을 쉽게 선택하도록 switch 문을 사용하겠습니다. 세련되지 않은 방식이지만, 코드를 아주 간단하게 유지하여 레이 트레이싱에 집중하기 위함입니다. 여러분의 레이 트레이서에서는 명령문 인자를 적용하는 것과 같은 다른 방식을 적용하는 것도 좋습니다.
+
+<span>main.cc</span>의 랜덤 구 씬을 리펙토링하면 다음과 같습니다. `main()` 의 함수명을 `bouncing_spheres()` 로 변경하고, `bouncing_spheres()` 함수를 호출하기 위한 새로운 `main()` 함수를 추가합니다.
+
+```cpp
+#include "rtweekend.h"
+
+#include "bvh.h"
+#include "camera.h"
+#include "hittable.h"
+#include "hittable_list.h"
+#include "material.h"
+#include "sphere.h"
+#include "texture.h"
+
+///////////////////////// 삭제 //////////////////////////
+// int main() {                                       //
+////////////////////////////////////////////////////////
+///////////////////////// 추가 //////////////////////////
+void bouncing_spheres() {                             //
+////////////////////////////////////////////////////////
+  hittable_list world;
+
+  auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
+  world.add(make_shared<sphere>(point3(0, -1000, 0), 1000, ground_material));
+
+  ...
+
+  cam.render(world);
+}
+
+///////////////////////// 추가 //////////////////////////
+int main() {                                          //
+  bouncing_spheres();                                 //
+}                                                     //
+////////////////////////////////////////////////////////
+```
+
+**<p align="center">Listing 27:** [<span>main</span>.cc] _Main dispatching to selected scene_
+
+이제 체크 패턴 구 두 개를 위아래로 배치한 씬을 추가합니다.
+
+```cpp
+#include "rtweekend.h"
+
+#include "bvh.h"
+#include "camera.h"
+#include "hittable.h"
+#include "hittable_list.h"
+#include "material.h"
+#include "sphere.h"
+#include "texture.h"
+
+void bouncing_spheres() {
+  ...
+}
+
+///////////////////////// 추가 ////////////////////////////////////////////////////////////////
+void checkered_spheres() {                                                                  //
+  hittable_list world;                                                                      //
+                                                                                            //
+  auto checker = make_shared<checker_texture>(0.32, color(.2, .3, .1), color(.9, .9, .9));  //
+                                                                                            //
+  world.add(make_shared<sphere>(point3(0, -10, 0), 10, make_shared<lambertian>(checker)));  //
+  world.add(make_shared<sphere>(point3(0,  10, 0), 10, make_shared<lambertian>(checker)));  //
+                                                                                            //
+  camera cam;                                                                               //
+                                                                                            //
+  cam.aspect_ratio      = 16.0 / 9.0;                                                       //
+  cam.image_width       = 400;                                                              //
+  cam.samples_per_pixel = 100;                                                              //
+  cam.max_depth         = 50;                                                               //
+                                                                                            //
+  cam.vfov     = 20;                                                                        //
+  cam.lookfrom = point3(13, 2, 3);                                                          //
+  cam.lookat   = point3(0, 0, 0);                                                           //
+  cam.vup      = vec3(0, 1, 0);                                                             //
+                                                                                            //
+  cam.defocus_angle = 0;                                                                    //
+                                                                                            //
+  cam.render(world);                                                                        //
+}                                                                                           //
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+
+int main() {
+///////////////////////// 수정 ////////////////////////////////////////////////////////////////
+  switch (2) {                                                                              //
+    case 1: bouncing_spheres();  break;                                                     //
+    case 2: checkered_spheres(); break;                                                     //
+  }                                                                                         //
+//////////////////////////////////////////////////////////////////////////////////////////////
+}
+```
+
+**<p align="center">Listing 28:** [<span>main</span>.cc] _Two checkered spheres_
+
+결과는 다음과 같습니다.
+
+<p align="center"><img src="https://raytracing.github.io/images/img-2.03-checker-spheres.png"></p>
+
+**<p align="center">Image 3:** _Checkered spheres</p>_
+
+렌더링 결과가 조금 이상하게 보인다고 생각할 수 있습니다. `checker_texture` 가 3차원 공간에 정의된 spatial texture이기 때문에, 구 표면이 3차원 체크 공간을 가로질러 지나가게 됩니다. 그 결과, 구 표면의 각 점이 3차원 체크 공간의 어떤 색 영역에 있는지에 따라 체크 패턴이 나타납니다. 체크 패턴이 완벽하거나, 적어도 그럴듯한 경우가 많이 존재합니다. 하지만 그렇지 않은 경우에서도 오브젝트의 표면에 체크 패턴이 일정하길 원합니다. 이 방식은 다음에서 다루겠습니다.
 
 ---
 
