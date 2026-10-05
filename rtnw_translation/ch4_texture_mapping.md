@@ -296,6 +296,107 @@ int main() {
 ---
 
 ### 4.4 Texture Coordinates for Spheres
+상수 색상 텍스처는 좌표를 사용하지 않습니다. solid(또는 spatial) texture는 3차원 공간상의 점 좌표를 사용합니다. 이제는 $u, v$ 텍스처 좌표를 사용할 때입니다. $u, v$ 텍스처 좌표는 2D 이미지(또는 어떤 2D 파라미터 공간)에서의 위치를 가리킵니다. 이 텍스처 좌표를 계산하기 위해서는, 3D 오브젝트 표면의 어떤 점에 대해서든지 $u, v$ 좌표를 구할 수 있어야 합니다. 이 매핑 방식에는 절대적인 정답이 있지는 않지만, 일반적으로는 표면 전체에 대응되면서 2D 이미지를 스케일링, 회전하고 늘려서 적당한 형태로 매핑되는 것이 바람직합니다. 먼저, 구의 $u, v$ 텍스처 좌표를 구하는 방법부터 알아보겠습니다.
+
+일반적으로 구의 텍스처 좌표는 경도(longitude), 위도(latitude)와 비슷한 방식인  구면 좌표계 형식으로 정의됩니다. 따라서 구면 좌표계에서는 $(\theta, \phi)$ 를 계산합니다. 여기서 $\theta$ 는 구의 아래쪽 극점에서 위쪽으로(-Y 방향으로부터 위쪽으로) 측정한 각도이고, $\phi$ 는 Y축을 중심으로 도는(-X에서 출발하여 +Z, +X, -Z, 다시 -X로 돌아오는) 방향으로 측정한 각도입니다.
+
+$\theta$ 와 $\phi$ 를 각각 $[0, 1]$ 범위의 텍스처 좌표 $u$ 와 $v$ 로 매핑하겠습니다. $(u = 0, v = 0)$ 은 텍스처의 왼쪽 아래 모서리로 매핑됩니다. 따라서 $(\theta, \phi)$ 에서 $(u, v)$ 로의 정규화는 다음과 같습니다.
+
+$$ u = \frac{\phi}{2\pi} $$
+$$ v = \frac{\theta}{\pi} $$
+
+원점 중심 단위 구 위의 주어진 점에 대한 $\theta$ 와 $\phi$ 를 계산하기 위해, 먼저 그 점에 대응하는 데카르트 좌표계(Cartesian coordinates)의 방정식을 사용합니다.
+
+$$ \begin{align*}
+    y &= -\cos(\theta)            \\
+    x &= -\cos(\phi) \sin(\theta) \\
+    z &= \quad\sin(\phi) \sin(\theta)
+    \end{align*}
+$$
+
+$\theta$ 와 $\phi$ 를 구하기 위해서는 위의 방정식을 뒤집어야 합니다. `<cmath>` 의 `std::atan2()` 함수는 정확히 $\cos(\phi), \sin(\phi)$ 자체를 입력으로 넣어야 하는 게 아니라, sine과 cosine에 각각 같은 비례계수($\sin(\theta)$)가 곱해진 값을 입력으로 받더라도 각도를 리턴하므로, $x$ 와 $z$ 를 인자로 전달하여 $\phi$ 를 구할 수 있습니다. 이때 두 값에 공통으로 들어 있는 $\sin(\theta)$ 항은 상쇄됩니다.
+
+$$ \phi = \operatorname{atan2}(z, -x) $$
+
+`std::atan2()` 은 $-\pi$ 부터 $\pi$ 까지 범위의 값을 리턴하지만, 그 값은 0에서  $\pi$ 까지 증가하다가, 갑자기 $-\pi$ 로 뒤집히고 다시 0까지 증가합니다. 이 방식은 수학적으로는 맞지만, 여기서 원하는 $u$ 의 범위는 $0$에서 $1/2$ 로 증가하다가, 갑자기 $-1/2$ 에서 다시 $0$ 으로 증가하는 형태가 아닌, 0에서 1까지 한 방향으로 증가하는 형태입니다. `atan2(a, b)` 가 벡터 $(b, a)$ 의 각도를 구한다고 생각해 보겠습니다. 두 입력의 부호를 모두 뒤집으면
+
+$$ (b,a) \rightarrow (-b,-a) $$
+
+위와 같이 되고, 이것은 원래 벡터를 정확히 180도, 즉 $\pi$ 만큼 회전시킨 것입니다. 따라서 벡터 $(b, a)$ 와 벡터 $(-b, -a)$ 의 각도 차이는 항상 $\pi$ 입니다. 하지만 각도는 한 바퀴($2\pi$) 를 돌면 같은 방향이 되므로 $\phi$ 와 $\phi + 2\pi$ 는 같은 방향입니다. 따라서 다음 공식이 성립하게 됩니다.
+
+$$ \operatorname{atan2}(a,b) = \operatorname{atan2}(-a,-b) + \pi, $$
+
+위 공식의 오른쪽 항을 사용하면 $0$ 에서 $2\pi$ 까지 연속적으로 증가하는 값을 얻을 수 있습니다. 따라서, $\phi$ 를 다음과 같이 계산할 수 있습니다.
+
+$$ \phi = \operatorname{atan2}(-z, x) + \pi $$
+
+$\theta$ 값을 유도하는 것은 더 간단합니다.
+
+$$ \theta = \arccos(-y) $$
+
+따라서 구의 $(u, v)$ 좌표는, 원점을 중심으로 하는 단위 구 표면의 점을 입력으로 받는 유틸리티 함수로 계산합니다.
+
+```cpp
+class sphere : public hittable {
+  ...
+  private:
+    ...
+
+///////////////////////// 추가 ////////////////////////////////////////////////////
+    static void get_sphere_uv(const point3& p, double& u, double& v) {          //
+      // p: a given point on the sphere of radius one, centered at the origin.  //
+      // u: returned value [0, 1] of angle around the Y axis from X = -1.       //
+      // v: returned value [0, 1] of angle from Y = -1 to Y = +1.               //
+      //    <1 0 0> yields <0.50 0.50>    <-1  0  0> yields <0.00 0.50>         //
+      //    <0 1 0> yields <0.50 1.00>    < 0 -1  0> yields <0.50 0.00>         //
+      //    <0 0 1> yields <0.25 0.50>    < 0  0 -1> yields <0.75 0.50>         //
+                                                                                //
+      auto theta = std::acos(-p.y());                                           //
+      auto phi = std::atan2(-p.z(), p.x()) + pi;                                //
+                                                                                //
+      u = phi / (2 * pi);                                                       //
+      v = theta / pi;                                                           //
+    }                                                                           //
+//////////////////////////////////////////////////////////////////////////////////
+};
+```
+
+**<p align="center">Listing 29:** [sphere.h] _get\_sphere\_uv function_
+
+`sphere::hit()` 함수 안에서 `get_sphere_uv()` 함수를 사용하도록 수정하여 hit record의 UV 좌표를 업데이트합니다.
+
+```cpp
+class sphere : public hittable {
+  public:
+    ...
+    bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
+      ...
+
+      rec.t = root;
+      rec.p = r.at(rec.t);
+      vec3 outward_normal = (rec.p - current_center) / radius;
+      rec.set_face_normal(r, outward_normal);
+///////////////////////// 추가 //////////////////////////////////
+      get_sphere_uv(outward_normal, rec.u, rec.v);            //
+////////////////////////////////////////////////////////////////
+      rec.mat = mat;
+
+      return true;
+    }
+    ...
+};
+```
+
+**<p align="center">Listing 30:** [sphere.h] _Sphere UV coordinates from hit_
+
+교차점 $\mathbf{P}$ 를 사용하여, 해당 표면의 $(u,v)$ 표면 좌표를 계산합니다. 이 $(u,v)$ 표면 좌표로 procedural solid texture(대리석과 같은)에서 해당 위치 값을 조회합니다. 또한 이미지를 읽은 뒤, $(u,v)$ 텍스처 좌표를 사용하여 이미지의 해당 위치를 조회할 수도 있습니다.
+
+스케일된 $(u, v)$ 좌표를 이미지에서 직접 사용하는 방법은 $u$ 와 $v$ 를 정수로 반올림하여 그 값을 $(i, j)$ 픽셀 좌표로 사용하는 것입니다. 하지만 이 방법은 불편합니다. 이미지 해상도를 변경할 때마다 코드를 수정해야만 하기 때문입니다. 따라서 그 대신에, 그래픽스에서 가장 널리 쓰이는 비공식 표준 방법 중 하나는 이미지 픽셀 좌표를 직접 쓰는 것 대신에 해상도와 독립적인 텍스처 좌표를 사용하는 것입니다. 이 텍스처 좌표는 이미지 안의 위치를 단지 비율로 나타낸 값일 뿐입니다. 예를 들어, 가로 $N_x$ 세로 $N_y$ 크기 이미지의 픽셀 좌표 $(i, j)$ 에서 이미지 텍스처 좌표는 다음과 같습니다.
+
+$$ u = \frac{i}{N_x-1} $$
+$$ v = \frac{j}{N_y-1} $$
+
+이 값은 위치를 비율로 나타낸 것일 뿐입니다.
 
 ---
 
